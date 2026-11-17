@@ -41,8 +41,8 @@ faiss_index/
 # Uploaded temporary files & logs
 temp_uploads/
 *.pdf
+!sample_docs/*.pdf
 .pytest_cache/
 .coverage
 htmlcov/
 *.log
-

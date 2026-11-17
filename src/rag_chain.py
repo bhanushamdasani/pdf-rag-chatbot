@@ -1,9 +1,12 @@
-"""RAG Chain module: builds conversational QA chain with memory and citation tracking."""
+"""RAG Chain module: builds conversational QA chain with memory and citation tracking.
+Supports live Google Gemini LLM and zero-cost Offline Demo LLM.
+"""
 
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 from langchain.chains import ConversationalRetrievalChain
 from langchain.memory import ConversationBufferWindowMemory
 from langchain.prompts import PromptTemplate
+from langchain_core.language_models.llms import LLM
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.vectorstores import VectorStoreRetriever
 
@@ -26,22 +29,69 @@ Question:
 Helpful Answer:"""
 
 
-def get_gemini_llm(
-    google_api_key: str,
-    model_name: str = "gemini-1.5-flash",
-    temperature: float = 0.2
-) -> ChatGoogleGenerativeAI:
+class DemoExtractiveLLM(LLM):
     """
-    Initializes Google Gemini Chat LLM.
+    Offline extractive summarizer for seamless demonstrations without requiring an API key.
+    Extracts relevant grounded sentences from retrieved chunks with zero hallucination.
+    """
+    def _call(self, prompt: str, stop: Optional[List[str]] = None, **kwargs) -> str:
+        # Extract context and question from prompt
+        if "Context:" in prompt:
+            parts = prompt.split("Context:")
+            ctx_and_q = parts[-1]
+            if "Question:" in ctx_and_q:
+                ctx_text, q_text = ctx_and_q.split("Question:")
+            else:
+                ctx_text, q_text = ctx_and_q, ""
+        else:
+            ctx_text, q_text = prompt, ""
+
+        # Extract keyword-matched grounded lines
+        keywords = [w.lower().strip("?,.") for w in q_text.split() if len(w) > 3]
+        lines = [line.strip() for line in ctx_text.split("\n") if line.strip() and not line.startswith("Helpful Answer")]
+        matched = []
+        for line in lines:
+            line_lower = line.lower()
+            if any(k in line_lower for k in keywords):
+                if line not in matched:
+                    matched.append(line)
+
+        if matched:
+            bullets = "\n".join(f"• {m}" for m in matched[:4])
+            return f"**Grounded Answer (Extracted from Document):**\n\n{bullets}"
+        elif lines:
+            return f"**Grounded Context:**\n\n• {lines[0]}"
+
+        return "I cannot find the answer to this question in the uploaded document."
+
+    @property
+    def _llm_type(self) -> str:
+        return "demo_extractive"
+
+
+def get_gemini_llm(
+    google_api_key: Optional[str] = None,
+    model_name: str = "gemini-1.5-flash",
+    temperature: float = 0.2,
+    demo_mode: bool = False
+) -> Any:
+    """
+    Initializes LLM for RAG chain.
+    If demo_mode is True, returns DemoExtractiveLLM (no API key needed).
+    Otherwise returns ChatGoogleGenerativeAI.
 
     Args:
         google_api_key: Google Gemini API key
-        model_name: Gemini model variant ('gemini-1.5-flash', 'gemini-1.5-pro', etc.)
-        temperature: Sampling temperature (lower = more deterministic/factual)
+        model_name: Gemini model name ('gemini-1.5-flash', etc.)
+        temperature: Sampling temperature
+        demo_mode: Offline demonstration mode flag
 
     Returns:
-        ChatGoogleGenerativeAI instance
+        LLM instance
     """
+    if demo_mode:
+        return DemoExtractiveLLM()
+
     if not google_api_key:
         raise ValueError("Google API Key must be provided for Gemini LLM.")
 
@@ -124,4 +174,3 @@ def format_citations(source_documents: List[Any]) -> List[Dict[str, Any]]:
             })
 
     return citations
-

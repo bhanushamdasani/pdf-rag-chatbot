@@ -6,8 +6,8 @@ from langchain_community.embeddings import FakeEmbeddings
 from langchain_community.llms.fake import FakeListLLM
 
 from src.document_processor import chunk_documents
-from src.vector_store import create_faiss_vector_store, get_retriever
-from src.rag_chain import build_conversational_rag_chain, format_citations
+from src.vector_store import create_faiss_vector_store, get_retriever, LocalTFIDFEmbeddings
+from src.rag_chain import build_conversational_rag_chain, format_citations, DemoExtractiveLLM
 
 
 def test_chunk_documents():
@@ -29,14 +29,14 @@ def test_chunk_documents():
 
 
 def test_faiss_vector_store_and_retriever():
-    """Verify FAISS vector index creation and retrieval."""
+    """Verify FAISS vector index creation and retrieval using semantic TF-IDF embeddings."""
     docs = [
         Document(page_content="Google Gemini is a multimodal AI model.", metadata={"page": 1}),
         Document(page_content="LangChain is an orchestration framework for LLMs.", metadata={"page": 2}),
         Document(page_content="FAISS provides efficient similarity search for dense vectors.", metadata={"page": 3}),
     ]
 
-    embeddings = FakeEmbeddings(size=32)
+    embeddings = LocalTFIDFEmbeddings(dim=32)
     vector_store = create_faiss_vector_store(docs, embeddings)
     retriever = get_retriever(vector_store, top_k=2)
 
@@ -83,6 +83,27 @@ def test_conversational_rag_chain_with_memory():
     result_2 = chain.invoke({"question": "How much funding did it get?"})
     assert result_2["answer"] == "It received a 10 million dollar grant."
     assert len(result_2["source_documents"]) >= 1
+
+
+def test_offline_demo_pipeline():
+    """Verify offline demonstration mode using LocalTFIDFEmbeddings and DemoExtractiveLLM."""
+    docs = [
+        Document(page_content="Enterprise RAG adoption reached 78 percent in 2025.", metadata={"page": 1, "source": "report.pdf"}),
+        Document(page_content="Project Titan was granted 15.5 million dollars in funding.", metadata={"page": 2, "source": "report.pdf"}),
+        Document(page_content="FAISS vector similarity search averaged 14.2 milliseconds latency.", metadata={"page": 3, "source": "report.pdf"}),
+    ]
+
+    embeddings = LocalTFIDFEmbeddings(dim=32)
+    vector_store = create_faiss_vector_store(docs, embeddings)
+    retriever = get_retriever(vector_store, top_k=1)
+    llm = DemoExtractiveLLM()
+
+    chain = build_conversational_rag_chain(llm=llm, retriever=retriever, window_k=2)
+    result = chain.invoke({"question": "What was the adoption rate in 2025?"})
+
+    assert "78 percent" in result["answer"]
+    assert len(result["source_documents"]) == 1
+    assert result["source_documents"][0].metadata["page"] == 1
 
 
 def test_empty_document_handling():
