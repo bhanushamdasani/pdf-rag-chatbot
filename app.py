@@ -6,14 +6,29 @@ secure hidden key management, and 1-click live/offline demonstration mode.
 import os
 from pathlib import Path
 import streamlit as st
-from dotenv import load_dotenv
+
+# Safe environment loading without hard dependency on python-dotenv
+def load_env_file(filepath: str = ".env"):
+    if os.path.exists(filepath):
+        try:
+            with open(filepath, "r", encoding="utf-8") as f:
+                for line in f:
+                    line = line.strip()
+                    if line and not line.startswith("#") and "=" in line:
+                        k, v = line.split("=", 1)
+                        os.environ.setdefault(k.strip(), v.strip().strip('"').strip("'"))
+        except Exception:
+            pass
+
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    load_env_file()
 
 from src.document_processor import extract_text_from_pdf, chunk_documents
 from src.vector_store import get_embedding_model, create_faiss_vector_store, get_retriever
 from src.rag_chain import get_gemini_llm, build_conversational_rag_chain, format_citations
-
-# Load environment variables from .env
-load_dotenv()
 
 # Page configuration
 st.set_page_config(
