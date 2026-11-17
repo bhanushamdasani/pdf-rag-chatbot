@@ -73,3 +73,4 @@ def chunk_documents(
         chunk.metadata["chunk_id"] = idx
         
     return chunks
+

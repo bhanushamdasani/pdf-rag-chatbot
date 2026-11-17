@@ -124,3 +124,4 @@ def format_citations(source_documents: List[Any]) -> List[Dict[str, Any]]:
             })
 
     return citations
+

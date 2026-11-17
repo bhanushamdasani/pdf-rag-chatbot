@@ -160,3 +160,4 @@ Feel free to adapt these bullet points for your resume:
 
 ## 📄 License
 This project is open-source and licensed under the [MIT License](LICENSE).
+

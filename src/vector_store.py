@@ -87,3 +87,4 @@ def get_retriever(vector_store: FAISS, top_k: int = 4):
         search_type="similarity",
         search_kwargs={"k": top_k}
     )
+

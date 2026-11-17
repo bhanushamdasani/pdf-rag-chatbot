@@ -314,3 +314,4 @@ else:
                     error_msg = f"⚠️ An error occurred while generating the answer: {str(e)}"
                     st.error(error_msg)
                     st.session_state.messages.append({"role": "assistant", "content": error_msg})
+
