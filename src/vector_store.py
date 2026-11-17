@@ -42,7 +42,7 @@ class LocalTFIDFEmbeddings(Embeddings):
 
 def get_embedding_model(
     google_api_key: Optional[str] = None,
-    model_name: str = "models/embedding-001",
+    model_name: str = "models/gemini-embedding-001",
     demo_mode: bool = False
 ) -> Embeddings:
     """

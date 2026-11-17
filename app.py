@@ -200,10 +200,10 @@ with st.sidebar:
     st.subheader("🤖 Model & RAG Settings")
     model_choice = st.selectbox(
         "Gemini Model",
-        options=["gemini-1.5-flash", "gemini-1.5-pro", "gemini-2.0-flash"],
+        options=["gemini-3.8-flash", "gemini-3.8-flash-lite", "gemini-3.5-flash"],
         index=0,
         disabled=offline_demo_toggle,
-        help="gemini-1.5-flash is fast, accurate, and free-tier friendly."
+        help="gemini-3.8-flash is the latest high-speed Gemini model."
     )
 
     temperature = st.slider(

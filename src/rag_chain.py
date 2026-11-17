@@ -71,7 +71,7 @@ class DemoExtractiveLLM(LLM):
 
 def get_gemini_llm(
     google_api_key: Optional[str] = None,
-    model_name: str = "gemini-1.5-flash",
+    model_name: str = "gemini-3.8-flash",
     temperature: float = 0.2,
     demo_mode: bool = False
 ) -> Any:
